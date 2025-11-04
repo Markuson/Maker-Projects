@@ -4,12 +4,13 @@ __pycache__/
 *$py.class
 *.so
 .Python
+*.egg-info/
+*.egg
+
+# Virtual environments
 env/
 venv/
 ENV/
-*.egg-info/
-.eggs/
-*.egg
 
 # IDEs
 .vscode/
@@ -18,12 +19,20 @@ ENV/
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
+# Logs
+logs/*.log
 *.log
 
 # Temporals
 *.tmp
 *.bak
 .cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+outputs/
+*.png
+*.jpg
