@@ -21,7 +21,7 @@ TASKS = [
 def draw_checkbox(display, x, y, checked, size=10):
     """Draw checkbox"""
     # Box
-    display.rectangle(x, y, size, size, outline=display.BLACK, width=2)
+    display.rectangle(x, y, size, size, outline=display.BLACK, width_line=2)
     
     # Check if marked
     if checked:
