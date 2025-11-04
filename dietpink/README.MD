@@ -192,7 +192,17 @@ with DietpinkDisplay() as display:
 
 ### Syncing to Raspberry Pi
 
-**Option 1: Using the sync script (recommended)**
+**Option 1: VS Code Keyboard Shortcuts (fastest)**
+
+If you're using VS Code with the workspace tasks configured:
+
+- **`Ctrl+Shift+B`** (or `Cmd+Shift+B` on Mac) - Quick sync to Pi (runs default build task)
+- **`Ctrl+Shift+P`** (or `Cmd+Shift+P` on Mac) → Type "Tasks: Run Task" - Choose from available tasks:
+  - `dietpink: Sync to Pi` - Sync all files
+  - `dietpink: Sync & Run Current File` - Sync and execute the currently open file
+  - `dietpink: SSH Connect` - Quick SSH connection
+
+**Option 2: Using the sync script**
 
 From the Maker-Projects root directory:
 ```bash
@@ -205,7 +215,7 @@ This script will:
 - 🚫 Automatically exclude unnecessary files (logs, cache, git files)
 - 📊 Show progress during transfer
 
-**Option 2: Manual rsync**
+**Option 3: Manual rsync**
 
 ```bash
 # From the Maker-Projects root directory
