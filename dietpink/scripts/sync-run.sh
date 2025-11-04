@@ -1,4 +1,5 @@
-# sync-run.sh - Sync i executar un script
+#!/bin/bash
+# sync-run.sh - Sync and run a script
 
 if [ $# -eq 0 ]; then
     echo "Usage: ./sync-run.sh <script.py>"
@@ -8,26 +9,14 @@ fi
 
 SCRIPT_NAME="$1"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REMOTE="root@dietpink.local"
+REMOTE="root@dietpink"
 
-# Sync primer
+# Sync first
 "$PROJECT_ROOT/scripts/sync.sh"
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "→ Executant $SCRIPT_NAME a dietpink..."
+    echo "→ Running $SCRIPT_NAME on dietpink..."
     echo ""
     ssh -t "$REMOTE" "cd /root/projects/dietpink/software/eink/examples && python3 $SCRIPT_NAME"
 fi
-EOF
-
-chmod +x ~/Maker-Projects/dietpink/scripts/sync-run.sh
-4.3. Script de Quick SSH
-bashcat > ~/Maker-Projects/dietpink/scripts/ssh.sh << 'EOF'
-#!/bin/bash
-# ssh.sh - Connectar ràpid a dietpink
-
-REMOTE="root@dietpink.local"
-
-echo "→ Connectant a dietpink..."
-ssh -t "$REMOTE" "cd /root/projects/dietpink && exec bash -l"

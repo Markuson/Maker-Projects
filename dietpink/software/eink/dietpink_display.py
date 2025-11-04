@@ -1,6 +1,6 @@
 """
-DietpinkDisplay - Wrapper personalitzat per e-ink 2.13" V4
-Simplifica l'ús del display per al projecte dietpink
+DietpinkDisplay - Custom wrapper for e-ink 2.13" V4
+Simplifies display usage for the dietpink project
 """
 
 import sys
@@ -8,7 +8,7 @@ import os
 import time
 from PIL import Image, ImageDraw, ImageFont
 
-# Path al driver WaveShare
+# Path to WaveShare driver
 LIBDIR = '/root/projects/dietpink/software/eink/drivers/e-Paper/RaspberryPi_JetsonNano/python/lib'
 if os.path.exists(LIBDIR):
     sys.path.append(LIBDIR)
@@ -17,39 +17,39 @@ from waveshare_epd import epd2in13_V4
 
 class DietpinkDisplay:
     """
-    Wrapper per WaveShare e-ink 2.13" V4
-    Facilita operacions comunes
+    Wrapper for WaveShare e-ink 2.13" V4
+    Simplifies common operations
     """
 
-    # Dimensions del display (landscape)
+    # Display dimensions (landscape)
     WIDTH = 122
     HEIGHT = 250
 
-    # Colors (mode 1-bit)
+    # Colors (1-bit mode)
     WHITE = 255
     BLACK = 0
 
     def __init__(self):
-        """Inicialitzar display"""
-        print("🎨 Inicialitzant DietpinkDisplay...")
+        """Initialize display"""
+        print("🎨 Initializing DietpinkDisplay...")
         self.epd = epd2in13_V4.EPD()
         self.epd.init()
 
-	# Clear físic del display per eliminar ghosting
-    	print("🧹 Netejant display físic...")
-    	self.epd.Clear(0xFF)  # 0xFF = blanc
+        # Physical clear of display to eliminate ghosting
+        print("🧹 Cleaning physical display...")
+        self.epd.Clear(0xFF)  # 0xFF = white
 
-	# Crear canvas (imatge base)
+        # Create canvas (base image)
         self.image = Image.new('1', (self.HEIGHT, self.WIDTH), self.WHITE)
         self.draw = ImageDraw.Draw(self.image)
         
-        # Carregar fonts
+        # Load fonts
         self._load_fonts()
         
-        print(f"✅ Display llest ({self.HEIGHT}x{self.WIDTH})")
+        print(f"✅ Display ready ({self.HEIGHT}x{self.WIDTH})")
     
     def _load_fonts(self):
-        """Carregar fonts del sistema"""
+        """Load system fonts"""
         font_path = '/usr/share/fonts/truetype/dejavu/'
         try:
             self.font_tiny = ImageFont.truetype(f'{font_path}DejaVuSans.ttf', 10)
@@ -57,9 +57,9 @@ class DietpinkDisplay:
             self.font_medium = ImageFont.truetype(f'{font_path}DejaVuSans.ttf', 16)
             self.font_large = ImageFont.truetype(f'{font_path}DejaVuSans-Bold.ttf', 24)
             self.font_huge = ImageFont.truetype(f'{font_path}DejaVuSans-Bold.ttf', 36)
-            print("✅ Fonts carregades")
+            print("✅ Fonts loaded")
         except Exception as e:
-            print(f"⚠️  Error carregant fonts: {e}")
+            print(f"⚠️  Error loading fonts: {e}")
             self.font_tiny = ImageFont.load_default()
             self.font_small = ImageFont.load_default()
             self.font_medium = ImageFont.load_default()
@@ -68,10 +68,10 @@ class DietpinkDisplay:
     
     def clear(self, color=None):
         """
-        Netejar canvas (no actualitza display)
+        Clear canvas (does not update display)
         
         Args:
-            color: WHITE o BLACK (None = WHITE)
+            color: WHITE or BLACK (None = WHITE)
         """
         if color is None:
             color = self.WHITE
@@ -80,13 +80,13 @@ class DietpinkDisplay:
     
     def text(self, text, x, y, size='medium', color=None, align='left'):
         """
-        Dibuixar text al canvas
+        Draw text on canvas
         
         Args:
-            text: Text a mostrar
-            x, y: Posició
+            text: Text to display
+            x, y: Position
             size: 'tiny', 'small', 'medium', 'large', 'huge'
-            color: BLACK o WHITE (None = BLACK)
+            color: BLACK or WHITE (None = BLACK)
             align: 'left', 'center', 'right'
         """
         if color is None:
@@ -101,7 +101,7 @@ class DietpinkDisplay:
         }
         font = fonts.get(size, self.font_medium)
         
-        # Ajustar posició segons alignment
+        # Adjust position according to alignment
         if align == 'center':
             bbox = self.draw.textbbox((0, 0), text, font=font)
             text_width = bbox[2] - bbox[0]
@@ -115,14 +115,14 @@ class DietpinkDisplay:
     
     def rectangle(self, x, y, width, height, fill=None, outline=None, width_line=1):
         """
-        Dibuixar rectangle
+        Draw rectangle
         
         Args:
-            x, y: Posició top-left
+            x, y: Top-left position
             width, height: Dimensions
-            fill: Color farcit (None = transparent)
-            outline: Color contorn (None = sense contorn)
-            width_line: Gruix línia
+            fill: Fill color (None = transparent)
+            outline: Outline color (None = no outline)
+            width_line: Line thickness
         """
         if outline is None and fill is None:
             outline = self.BLACK
@@ -135,13 +135,13 @@ class DietpinkDisplay:
         )
     
     def line(self, x1, y1, x2, y2, color=None, width=1):
-        """Dibuixar línia"""
+        """Draw line"""
         if color is None:
             color = self.BLACK
         self.draw.line((x1, y1, x2, y2), fill=color, width=width)
     
     def circle(self, x, y, radius, fill=None, outline=None, width=1):
-        """Dibuixar cercle (center x,y)"""
+        """Draw circle (center x,y)"""
         if outline is None and fill is None:
             outline = self.BLACK
             
@@ -151,38 +151,38 @@ class DietpinkDisplay:
     def progress_bar(self, x, y, width, height, percentage, 
                      bg_color=None, fill_color=None, border=True):
         """
-        Dibuixar barra de progrés
+        Draw progress bar
         
         Args:
-            x, y: Posició
+            x, y: Position
             width, height: Dimensions
             percentage: 0-100
-            bg_color: Color de fons
-            fill_color: Color del farcit
-            border: Mostrar vora?
+            bg_color: Background color
+            fill_color: Fill color
+            border: Show border?
         """
         if bg_color is None:
             bg_color = self.WHITE
         if fill_color is None:
             fill_color = self.BLACK
             
-        # Fons
+        # Background
         self.rectangle(x, y, width, height, fill=bg_color, 
                       outline=self.BLACK if border else None)
         
-        # Farcit segons percentatge
+        # Fill according to percentage
         fill_width = int((width - 4) * (percentage / 100))
         if fill_width > 0:
             self.rectangle(x + 2, y + 2, fill_width, height - 4, fill=fill_color)
     
     def image_from_file(self, path, x, y, width=None, height=None):
         """
-        Carregar i dibuixar imatge des de fitxer
+        Load and draw image from file
         
         Args:
-            path: Path al fitxer imatge
-            x, y: Posició
-            width, height: Redimensionar (opcional)
+            path: Path to image file
+            x, y: Position
+            width, height: Resize (optional)
         """
         try:
             img = Image.open(path)
@@ -190,20 +190,20 @@ class DietpinkDisplay:
             if width and height:
                 img = img.resize((width, height), Image.Resampling.LANCZOS)
             
-            # Convertir a 1-bit
+            # Convert to 1-bit
             img = img.convert('1')
             
-            # Pegar al canvas
+            # Paste on canvas
             self.image.paste(img, (x, y))
         except Exception as e:
-            print(f"⚠️  Error carregant imatge {path}: {e}")
+            print(f"⚠️  Error loading image {path}: {e}")
     
     def refresh(self, partial=False):
         """
-        Actualitzar display físic
+        Update physical display
         
         Args:
-            partial: Usar partial refresh (més ràpid, menys ghosting)
+            partial: Use partial refresh (faster, less ghosting)
         """
         if partial:
             self.epd.displayPartial(self.epd.getbuffer(self.image))
@@ -211,19 +211,19 @@ class DietpinkDisplay:
             self.epd.display(self.epd.getbuffer(self.image))
     
     def sleep(self):
-        """Posar display en sleep mode (baix consum)"""
+        """Put display in sleep mode (low power)"""
         self.epd.sleep()
     
     def clear_display(self):
-        """Netejar display físic (blanc)"""
+        """Clear physical display (white)"""
         self.epd.Clear(0xFF)
     
     def get_text_size(self, text, size='medium'):
         """
-        Obtenir dimensions d'un text
+        Get text dimensions
         
         Returns:
-            (width, height) en pixels
+            (width, height) in pixels
         """
         fonts = {
             'tiny': self.font_tiny,
@@ -246,18 +246,18 @@ class DietpinkDisplay:
 
 
 # ============================================================================
-# TEST DEL WRAPPER
+# WRAPPER TEST
 # ============================================================================
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("🧪 Test del DietpinkDisplay wrapper")
+    print("🧪 DietpinkDisplay wrapper test")
     print("=" * 50)
     
     try:
         with DietpinkDisplay() as display:
-            # Test 1: Text bàsic
-            print("\n📝 Test 1: Text en diferents mides")
+            # Test 1: Basic text
+            print("\n📝 Test 1: Text in different sizes")
             display.clear()
             display.text("dietpink", 125, 10, size='large', align='center')
             display.line(10, 35, 240, 35)
@@ -267,8 +267,8 @@ if __name__ == "__main__":
             display.refresh()
             time.sleep(3)
             
-            # Test 2: Formes
-            print("\n🔷 Test 2: Formes geomètriques")
+            # Test 2: Shapes
+            print("\n🔷 Test 2: Geometric shapes")
             display.clear()
             display.rectangle(10, 10, 60, 40, outline=display.BLACK, width_line=2)
             display.rectangle(80, 10, 60, 40, fill=display.BLACK)
@@ -279,7 +279,7 @@ if __name__ == "__main__":
             time.sleep(3)
             
             # Test 3: Progress bar
-            print("\n📊 Test 3: Barra de progrés")
+            print("\n📊 Test 3: Progress bar")
             display.clear()
             display.text("Progress bars:", 10, 10, size='small')
             display.progress_bar(10, 30, 200, 15, 25)
@@ -314,15 +314,15 @@ if __name__ == "__main__":
             display.refresh()
             time.sleep(3)
             
-            print("\n✅ Tots els tests completats!")
+            print("\n✅ All tests completed!")
             
     except KeyboardInterrupt:
-        print("\n⚠️  Interromput per usuari")
+        print("\n⚠️  Interrupted by user")
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
     
     print("\n" + "=" * 50)
-    print("✨ Test finalitzat")
+    print("✨ Test finished")
     print("=" * 50)

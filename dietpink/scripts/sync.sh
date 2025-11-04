@@ -1,4 +1,4 @@
-# sync.sh - Sincronitzar dietpink a la Raspberry Pi
+# sync.sh - Sync dietpink to Raspberry Pi
 
 # Colors
 RED='\033[0;31m'
@@ -7,9 +7,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuració
+# Configuration
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REMOTE="root@dietpink.local"
+REMOTE="root@dietpink"
 REMOTE_DIR="/root/projects/dietpink"
 
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
@@ -20,19 +20,20 @@ echo -e "${YELLOW}Local:${NC}  $PROJECT_ROOT"
 echo -e "${YELLOW}Remote:${NC} $REMOTE:$REMOTE_DIR"
 echo ""
 
-# Verificar connexió SSH
-echo -ne "${BLUE}→${NC} Verificant connexió SSH... "
-if ssh -o ConnectTimeout=3 -o BatchMode=yes "$REMOTE" exit 2>/dev/null; then
-    echo -e "${GREEN}✓${NC}"
+# Verify SSH connection
+echo -e "${BLUE}→${NC} Verifying SSH connection..."
+echo -e "${YELLOW}Note:${NC} If prompted, enter your password for $REMOTE"
+if ssh -o ConnectTimeout=10 "$REMOTE" exit; then
+    echo -e "${GREEN}✓${NC} Connection established"
 else
     echo -e "${RED}✗${NC}"
-    echo -e "${RED}Error: No es pot connectar a $REMOTE${NC}"
-    echo "Verifica que dietpink està engegada i accessible."
+    echo -e "${RED}Error: Cannot connect to $REMOTE${NC}"
+    echo "Verify that dietpink is powered on and accessible."
     exit 1
 fi
 
 # Rsync
-echo -e "${BLUE}→${NC} Sincronitzant fitxers..."
+echo -e "${BLUE}→${NC} Syncing files..."
 
 rsync -avz --delete \
     --exclude '.git/' \
@@ -52,14 +53,14 @@ rsync -avz --delete \
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo -e "${GREEN}✓ Sync completat amb èxit!${NC}"
+    echo -e "${GREEN}✓ Sync completed successfully!${NC}"
     echo ""
-    echo -e "${YELLOW}Pròxims passos:${NC}"
+    echo -e "${YELLOW}Next steps:${NC}"
     echo "  ssh $REMOTE"
     echo "  cd $REMOTE_DIR/software/eink/examples"
     echo "  python3 clock.py"
 else
     echo ""
-    echo -e "${RED}✗ Error durant la sincronització${NC}"
+    echo -e "${RED}✗ Error during sync${NC}"
     exit 1
 fi

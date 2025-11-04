@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "dietpink: Sync to Pi",
+            "type": "shell",
+            "command": "${workspaceFolder}/dietpink/scripts/sync.sh",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "dietpink: Sync & Run Current File",
+            "type": "shell",
+            "command": "${workspaceFolder}/dietpink/scripts/sync-run.sh ${fileBasename}",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "dietpink: SSH Connect",
+            "type": "shell",
+            "command": "${workspaceFolder}/dietpink/scripts/ssh.sh",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ]
+}
