@@ -1,0 +1,25 @@
+# Drivers externs (massa grans)
+software/eink/drivers/e-Paper/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Logs
+logs/*.log
+*.log
+
+# Temporals
+*.tmp
+*.bak
+
+# IDE
+.vscode/
+*.swp
+
+# Output files
+outputs/
+*.png
+*.jpg
