@@ -1,0 +1,25 @@
+{
+  "homeassistant": {
+    "url": "http://<HOME_ASSISTANT_IP>:8123",
+    "token": "homeassistant_long_lived_access_token_here"
+  },
+  "mqtt": {
+    "broker": "192.168.0.48",
+    "port": 1883,
+    "username": "MQTT_USERNAME",
+    "password": "MQTT PASSWORD",
+    "topics": {
+      "balco": "dietpink/temperatura/balco",
+      "menjador": "dietpink/temperatura/menjador"
+    }
+  },
+  "yr_api": {
+    "user_agent": "dietpink/1.0 (github.com/YOUR_USER_NAME; EMAIL@DOMAIN.COM)",
+    "update_interval_hours": 3,
+    "update_start_hour": 0
+  },
+  "display": {
+    "refresh_on_temp_change": true,
+    "partial_refresh": true
+  }
+}

@@ -23,3 +23,9 @@ logs/*.log
 outputs/
 *.png
 *.jpg
+
+# config file with secrets
+weather_config.json
+
+# Allow example template
+!weather_config.example.json
