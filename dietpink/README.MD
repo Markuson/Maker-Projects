@@ -9,6 +9,7 @@ An e-ink dashboard for Raspberry Pi Zero W featuring a WaveShare 2.13" V4 displa
 - [Features](#features)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
+- [Weather Display System](#weather-display-system)
 - [Examples](#examples)
 - [Development Workflow](#development-workflow)
 - [API Reference](#api-reference)
@@ -34,8 +35,8 @@ dietpink is a Python-based e-ink display framework that makes it easy to create 
 | **Display** | WaveShare e-ink 2.13" V4 |
 | **Resolution** | 250×122 pixels (landscape) |
 | **Colors** | Black & White (1-bit) |
-| **OS** | DietPi Trixie (Debian 13) |
-| **Python** | 3.13.5 |
+| **OS** | DietPi Bookworm (Debian 12) |
+| **Python** | 3.11+ |
 | **Interface** | SPI |
 
 ### Pin Connections
@@ -75,18 +76,34 @@ The core of this project is the `DietpinkDisplay` class, which provides a high-l
 
 ```
 dietpink/
-├── README.MD                    # This file
+├── README.md                    # This file
 ├── docs/                        # Documentation
+│   ├── DECISIONS.md             # Technical decisions
+│   └── CHANGELOG.md             # Version history
 ├── software/
 │   └── eink/
 │       ├── dietpink_display.py  # Main wrapper class
+│       ├── weather_ha.py        # Weather display main script
+│       ├── manage.sh            # Service management script
+│       ├── config/
+│       │   ├── weather_config.json          # Configuration (gitignored)
+│       │   └── weather_config.example.json  # Configuration template
+│       ├── modules/             # Weather display modules
+│       │   ├── __init__.py
+│       │   ├── mqtt_handler.py  # Home Assistant MQTT client
+│       │   ├── yr_weather.py    # YR.no weather API client
+│       │   └── weather_ui.py    # E-ink UI renderer
 │       ├── drivers/             # WaveShare driver library
 │       │   └── e-Paper/
-│       └── examples/            # Example applications
-│           └── clock.py         # Digital clock example
-├── tests/                       # Unit and integration tests
-│   └── eink/
+│       ├── examples/            # Example applications
+│       │   └── clock.py         # Digital clock example
+│       └── tests/               # Module tests
+│           ├── test_mqtt_simple.py
+│           ├── test_yr_uppsala.py
+│           └── test_weather_icons.py
 ├── scripts/                     # Utility scripts
+│   ├── sync.sh                  # Sync Pi → Mac
+│   └── deploy.sh                # Deploy Mac → Pi
 ├── configs/                     # Configuration files
 ├── hardware/                    # Hardware schematics and docs
 └── logs/                        # Application logs
@@ -99,7 +116,7 @@ dietpink/
 1. Raspberry Pi Zero W with DietPi installed
 2. WaveShare e-ink 2.13" V4 display properly connected
 3. SSH access enabled
-4. Python 3.13+ installed
+4. Python 3.11+ installed
 
 ### Installation
 
@@ -123,7 +140,7 @@ dietpink/
 3. **Install dependencies on the Pi:**
    ```bash
    ssh root@dietpink.local
-   pip3 install --break-system-packages Pillow spidev lgpio gpiozero qrcode
+   pip3 install --break-system-packages Pillow spidev lgpio gpiozero qrcode paho-mqtt requests
    ```
 
 ### Running Your First Example
@@ -136,6 +153,145 @@ python3 clock.py
 
 Press `Ctrl+C` to stop the example.
 
+## 🌤️ Weather Display System
+
+A complete weather monitoring system integrating Home Assistant sensors and YR.no forecast data.
+
+### Features
+
+- **Real-time indoor/outdoor temperatures** via Home Assistant MQTT
+- **Weather forecast** from YR.no API (updated every 3 hours)
+- **Graphical weather icons** rendered with PIL geometry
+- **Wind direction indicator** with directional triangle
+- **Auto-start service** via systemd
+- **Automatic updates** on temperature changes
+
+### Display Layout
+
+```
+┌─────────────────────────────┐
+│   ┌────┐  │                 │
+│   │22°C│  │   ☁️ (icon)     │
+│   └────┘  │                 │
+│  indoor   │                 │
+│           │  Max: 15°C      │
+│    8°C    │  Min: 8°C       │
+│  outdoor  │  Rain: 2.3mm    │
+│           │  12km/h ▲       │
+└─────────────────────────────┘
+```
+
+### Architecture
+
+```
+weather_ha.py (main)
+├── modules/mqtt_handler.py    # MQTT client for HA sensors
+├── modules/yr_weather.py      # YR.no API client
+└── modules/weather_ui.py      # Display rendering with icons
+```
+
+### Setup
+
+1. **Configure Home Assistant MQTT**
+   
+   Create automations to publish temperature sensor values to MQTT topics:
+   - `dietpink/temperatura/balco` (outdoor)
+   - `dietpink/temperatura/menjador` (indoor)
+
+2. **Create configuration file**
+   ```bash
+   cd /root/projects/dietpink/software/eink
+   cp config/weather_config.example.json config/weather_config.json
+   nvim config/weather_config.json
+   ```
+   
+   Fill in:
+   - `homeassistant.token`: Long-Lived Access Token from HA
+   - `mqtt.password`: MQTT user password
+   - `yr_api.user_agent`: Your email (required by YR API)
+
+3. **Test modules individually**
+   ```bash
+   cd modules
+   python3 mqtt_handler.py      # Test MQTT connection
+   python3 yr_weather.py        # Test YR API
+   python3 weather_ui.py        # Test display rendering
+   ```
+
+4. **Run the weather display**
+   ```bash
+   python3 weather_ha.py
+   ```
+
+5. **Install as systemd service**
+   ```bash
+   sudo cp dietpink-weather.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable dietpink-weather
+   sudo systemctl start dietpink-weather
+   ```
+
+### Service Management
+
+```bash
+./manage.sh start     # Start service
+./manage.sh stop      # Stop service
+./manage.sh restart   # Restart service
+./manage.sh status    # Check status
+./manage.sh logs      # View live logs
+```
+
+### Weather Icons
+
+The system renders graphical icons for each weather condition:
+
+| Condition | Icon Description |
+|-----------|------------------|
+| Clear sky | Sun with rays |
+| Partly cloudy | Sun + cloud |
+| Cloudy | Rounded cloud |
+| Rain | Cloud + droplets |
+| Heavy rain | Cloud + thick lines |
+| Snow | Cloud + snowflakes |
+| Fog | Horizontal lines |
+
+### Home Assistant Configuration
+
+#### Creating MQTT User
+
+1. **Settings** → **People** → **Users** tab
+2. **Add User**
+   - Name: `MQTT dietpink`
+   - Username: `mqtt_dietpink`
+   - Password: (choose and save)
+   - ✅ Can only login from local network
+
+#### Creating Temperature Automations
+
+Example automation for outdoor temperature:
+
+```yaml
+alias: Publicar Temperatura Balcó
+trigger:
+  - platform: state
+    entity_id: sensor.your_outdoor_sensor
+action:
+  - service: mqtt.publish
+    data:
+      topic: dietpink/temperatura/balco
+      payload: "{{ states('sensor.your_outdoor_sensor') }}"
+      retain: true
+mode: single
+```
+
+#### Getting Long-Lived Access Token
+
+1. Home Assistant → Click your profile (bottom left)
+2. Scroll to **Long-Lived Access Tokens**
+3. Click **Create Token**
+4. Name: `dietpink_api`
+5. Copy token to `weather_config.json`
+
 ## 📱 Examples
 
 ### Currently Available
@@ -145,16 +301,17 @@ Press `Ctrl+C` to stop the example.
   - Shows day, date, and time
   - Minimal flickering thanks to partial refresh
 
-### Planned Examples
+- ✅ **`weather_ha.py`** - Weather display with Home Assistant integration
+  - Real-time temperatures via MQTT
+  - YR.no weather forecast
+  - Graphical weather icons
+  - Systemd service support
 
-The following examples are referenced in the project but not yet implemented:
+### Planned Examples
 
 - 📋 `boot_screen.py` - Startup screen with system info
 - 📊 `dashboard.py` - System stats dashboard (CPU, memory, disk)
 - 💻 `system_info.py` - Detailed system information
-- 💬 `message.py` - Simple message display
-- 🌤️ `weather.py` - Weather information display
-- ✅ `todo.py` - Task list display
 - 📱 `qr_display.py` - QR code generator and display
 
 ### Creating Your Own Display
@@ -192,17 +349,7 @@ with DietpinkDisplay() as display:
 
 ### Syncing to Raspberry Pi
 
-**Option 1: VS Code Keyboard Shortcuts (fastest)**
-
-If you're using VS Code with the workspace tasks configured:
-
-- **`Ctrl+Shift+B`** (or `Cmd+Shift+B` on Mac) - Quick sync to Pi (runs default build task)
-- **`Ctrl+Shift+P`** (or `Cmd+Shift+P` on Mac) → Type "Tasks: Run Task" - Choose from available tasks:
-  - `dietpink: Sync to Pi` - Sync all files
-  - `dietpink: Sync & Run Current File` - Sync and execute the currently open file
-  - `dietpink: SSH Connect` - Quick SSH connection
-
-**Option 2: Using the sync script**
+**Option 1: Using the sync script (recommended)**
 
 From the Maker-Projects root directory:
 ```bash
@@ -212,8 +359,16 @@ From the Maker-Projects root directory:
 This script will:
 - ✅ Verify SSH connection to `dietpink`
 - 🔄 Sync all project files using rsync
-- 🚫 Automatically exclude unnecessary files (logs, cache, git files)
+- 🚫 Automatically exclude unnecessary files (logs, cache, git files, secrets)
 - 📊 Show progress during transfer
+
+**Option 2: Deploy script (Mac → Pi with service restart)**
+
+```bash
+./dietpink/scripts/deploy.sh
+```
+
+This will sync files AND restart the systemd service automatically.
 
 **Option 3: Manual rsync**
 
@@ -223,6 +378,7 @@ rsync -avz --delete \
     --exclude '__pycache__/' \
     --exclude 'logs/' \
     --exclude '.git/' \
+    --exclude 'weather_config.json' \
     dietpink/ root@dietpink.local:/root/projects/dietpink/
 ```
 
@@ -243,26 +399,35 @@ rsync -avz --delete \
 3. **Test on device**:
    ```bash
    ssh root@dietpink.local
-   cd /root/projects/dietpink/software/eink/examples
-   python3 clock.py
+   cd /root/projects/dietpink/software/eink
+   python3 weather_ha.py
    ```
 
 ### Testing
 
-Run the built-in wrapper test:
+Run individual module tests:
 ```bash
-python3 dietpink_display.py
-```
+cd /root/projects/dietpink/software/eink
 
-This will run through a series of tests showing text, shapes, progress bars, and a sample dashboard.
+# Test display wrapper
+python3 dietpink_display.py
+
+# Test weather modules
+python3 modules/mqtt_handler.py
+python3 modules/yr_weather.py
+python3 modules/weather_ui.py
+
+# Test all weather icons
+python3 tests/test_weather_icons.py
+```
 
 ## 📚 API Reference
 
 ### DietpinkDisplay Class
 
 #### Properties
-- `WIDTH` - Display width in pixels (122)
-- `HEIGHT` - Display height in pixels (250)
+- `WIDTH` - Display width in pixels (250)
+- `HEIGHT` - Display height in pixels (122)
 - `WHITE` - White color constant (255)
 - `BLACK` - Black color constant (0)
 
@@ -294,6 +459,9 @@ This will run through a series of tests showing text, shapes, progress bars, and
 **`image_from_file(path, x, y, width=None, height=None)`**
 - Load and display an image
 
+**`show_image(image)`**
+- Display a PIL Image object directly
+
 **`refresh(partial=False)`**
 - Update the physical display
 - Use `partial=True` for faster updates
@@ -312,71 +480,67 @@ This will run through a series of tests showing text, shapes, progress bars, and
 Install on the Raspberry Pi:
 
 ```bash
-pip3 install --break-system-packages Pillow spidev lgpio gpiozero qrcode
+pip3 install --break-system-packages Pillow spidev lgpio gpiozero qrcode paho-mqtt requests
 ```
 
 ### Required Libraries
 
-- **Pillow** - Python Imaging Library for image manipulation
-- **spidev** - SPI interface for display communication
-- **lgpio** - GPIO control for Raspberry Pi
-- **gpiozero** - High-level GPIO library
-- **qrcode** - QR code generation (for QR examples)
+| Library | Purpose |
+|---------|---------|
+| **Pillow** | Image manipulation and drawing |
+| **spidev** | SPI interface for display |
+| **lgpio** | GPIO control for Raspberry Pi |
+| **gpiozero** | High-level GPIO library |
+| **qrcode** | QR code generation |
+| **paho-mqtt** | MQTT client for Home Assistant |
+| **requests** | HTTP client for YR.no API |
 
 ### System Requirements
 
-- DietPi Trixie (Debian 13) or Raspberry Pi OS
-- SPI interface enabled (`raspi-config` → Interface Options → SPI)
-- Python 3.13+
+- DietPi Bookworm (Debian 12) or Raspberry Pi OS
+- SPI interface enabled (`dietpi-config` → Advanced Options → SPI)
+- Python 3.11+
 
 ## 🔍 Troubleshooting
 
 ### Display not responding
-- Check SPI is enabled: `raspi-config` → Interface Options → SPI
+- Check SPI is enabled: `dietpi-config` → Advanced Options → SPI
 - Verify physical connections
 - Run the test script: `python3 dietpink_display.py`
 
 ### Import errors
 - Ensure you're on the Raspberry Pi (not local machine)
-- Install all dependencies
-- Check Python version: `python3 --version`
+- Install all dependencies with `--break-system-packages` flag
 
-### Ghosting on display
-- Use `display.clear_display()` for a full physical clear
-- Perform a full refresh occasionally: `display.refresh(partial=False)`
+### Weather display not updating
+- Check MQTT connection: `python3 modules/mqtt_handler.py`
+- Verify Home Assistant automations are triggering
+- Check service logs: `./manage.sh logs`
 
-### Permission errors
-- The display requires GPIO access, typically need root or gpio group
-- Try with sudo: `sudo python3 your_script.py`
+### No temperatures received
+- Manually trigger HA automations from the UI
+- Verify MQTT credentials in `weather_config.json`
+- Check Mosquitto broker is running in HA
 
-### ModuleNotFoundError: waveshare_epd
-- Check the driver path in `dietpink_display.py` matches your installation
-- Default path: `/root/projects/dietpink/software/eink/drivers/e-Paper/RaspberryPi_JetsonNano/python/lib`
+### YR API errors
+- Verify `user_agent` email is set in config
+- Check internet connectivity
+- API may be rate-limited, wait and retry
 
-## 🎯 Future Enhancements
+### Service won't start
+```bash
+# Check detailed logs
+journalctl -u dietpink-weather -n 50
 
-- [ ] Web interface for remote control
-- [ ] Configuration file support
-- [ ] More example applications
-- [ ] Auto-rotation support
-- [ ] Multi-display support
-- [ ] Integration with APIs (weather, calendar, etc.)
-- [ ] Animation framework
-- [ ] Battery level monitoring
-- [ ] Touch input support (if hardware added)
+# Test manually
+cd /root/projects/dietpink/software/eink
+python3 weather_ha.py
+```
 
 ## 📄 License
 
-Open source - available for personal and educational use.
+MIT License
 
 ## 👤 Author
 
-dietpink project - 2025
-
-## 🤝 Contributing
-
-Part of the larger Maker-Projects repository. See the [main README](../README.md) for contribution guidelines.
-
----
-
-**Happy coding!** 🎨✨ If you create something cool with dietpink, share it!
+Marc - 2025
